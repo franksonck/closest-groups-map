@@ -228,7 +228,7 @@
             //
             // Zoom sur les 4 groupes de soutiens les plus proches.
             //
-            httpGetJson('http://api-adresse.data.gouv.fr/search/?q='+ code_postal + '&postcode=' + code_postal, function (data) {
+            httpGetJson('//api-adresse.data.gouv.fr/search/?q='+ code_postal + '&postcode=' + code_postal, function (data) {
                 if(data.features.length == 0)  return;
                 var coordinates = data.features[0].geometry.coordinates;
 
@@ -236,6 +236,7 @@
                 httpGetJson('https://api.jlm2017.fr/groups?where={"coordinates":{"$near":{"$geometry":{"type":"Point","coordinates":['+coordinates[0]+','+coordinates[1]+']}}}}&max_results=4', function(data){
                     if(data._items.length == 0) return;
 
+                    // On cherche les coordonnées du rectangle englobant les 4 points.
                     var min_lat = data._items[0].coordinates.coordinates[1];
                     var min_long =  data._items[0].coordinates.coordinates[0];
                     var max_lat = data._items[0].coordinates.coordinates[1];
@@ -247,7 +248,8 @@
                         max_long = Math.max(max_long, data._items[i].coordinates.coordinates[0]);
                     }
 
-                    map.fitBounds( L.latLngBounds(L.latLng(min_lat, min_long), L.latLng(max_lat, max_long)));
+                    var padding_fix = 0.0002;
+                    map.fitBounds( L.latLngBounds(L.latLng(min_lat-padding_fix, min_long-padding_fix), L.latLng(max_lat+padding_fix, max_long+padding_fix)));
                 });
             });
         }

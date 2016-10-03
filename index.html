@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <script type="text/javascript">
+        // Vous savez coder et vous voulez aider ? RDV sur https://chat.coders.jlm2017.fr/
+    </script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Groupes d'appui les plus proches - JLM 2017</title>
+
+    <script>
+        (function(i, s, o, g, r, a, m) {
+            i['GoogleAnalyticsObject'] = r;
+            i[r] = i[r] || function() {
+                (i[r].q = i[r].q || []).push(arguments)
+            }, i[r].l = 1 * new Date();
+            a = s.createElement(o),
+                m = s.getElementsByTagName(o)[0];
+            a.async = 1;
+            a.src = g;
+            m.parentNode.insertBefore(a, m)
+        })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+        ga('create', 'UA-57940932-3', 'auto');
+        ga('send', 'pageview');
+    </script>
+
+    <link rel="stylesheet" href="https://npmcdn.com/leaflet@0.7.7/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.5.0/MarkerCluster.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.5.0/MarkerCluster.Default.css">
+
+    <style>
+        html, body {
+          width: 100%;
+          margin: 0;
+          height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        a.maplink {
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        a.maplink:hover {
+            text-decoration: underline;
+        }
+
+        a.maplinkblue,
+        .layer-control-blue {
+            color: #0098b6;
+        }
+
+        a.maplinkred,
+        .layer-control-red {
+            color: #c9462c;
+        }
+
+        a.maplinkgreen,
+        .layer-control-green {
+            color: rgb(0, 180, 0);
+        }
+
+        .marker-cluster-blue div {
+            background-color: rgba(0, 100, 150, 0.6);
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .marker-cluster-blue {
+            background-color: rgba(0, 202, 232, 0.6);
+        }
+
+        .marker-cluster-red div {
+            background-color: rgba(200, 70, 40, 0.6);
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .marker-cluster-red {
+            background-color: rgba(50, 230, 50, 0.6);
+        }
+
+        .marker-cluster-green div {
+            background-color: rgba(0, 160, 0, 0.6);
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .marker-cluster-green {
+            background-color: rgba(50, 230, 50, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://npmcdn.com/leaflet@0.7.7/dist/leaflet.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/0.5.0/leaflet.markercluster.js"></script>
+    <script>
+        var red_ico = L.Icon.Default.extend({
+            options: {
+                iconUrl: 'https://www.k6op.fr/jlmap/marker-icon-red.png'
+            }
+        });
+        var red_icon = new red_ico;
+
+        var green_ico = L.Icon.Default.extend({
+            options: {
+                iconUrl: 'https://www.k6op.fr/jlmap/marker-icon-green.png'
+            }
+        });
+        var green_icon = new green_ico;
+
+        var tiles = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution: '<a href="http://osm.org/copyright">OpenStreetMap</a>'
+        });
+        var latlng = L.latLng(43, 2);
+        var map = L.map('map', {
+            center: latlng,
+            zoom: 6,
+            layers: [tiles]
+        });
+
+        var markers_green = L.markerClusterGroup({
+            iconCreateFunction: function(cluster) {
+                return L.divIcon({
+                    html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                    className: 'marker-cluster marker-cluster-green',
+                    iconSize: new L.Point(40, 40)
+                });
+            }
+        });
+
+        var markers_blue = L.markerClusterGroup({
+            iconCreateFunction: function(cluster) {
+                return L.divIcon({
+                    html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                    className: 'marker-cluster marker-cluster-blue',
+                    iconSize: new L.Point(40, 40)
+                });
+            }
+        });
+
+        var markers_red = L.markerClusterGroup({
+            iconCreateFunction: function(cluster) {
+                return L.divIcon({
+                    html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                    className: 'marker-cluster marker-cluster-red',
+                    iconSize: new L.Point(40, 40)
+                });
+            }
+        });
+
+        var limites = [
+            [41.783787, 9.587328],
+            [51.352263, -4.627801]
+        ];
+        map.fitBounds(limites);
+        var r = new XMLHttpRequest();
+        r.open('GET', 'https://api.jlm2017.fr/groups', true);
+        r.setRequestHeader('Accept', 'application/json');
+        r.onreadystatechange = function() {
+            if (r.readyState != 4 || r.status != 200) return;
+
+            var data = JSON.parse(r.responseText);
+
+            for (var i = 0; i < data._items.length; i++) {
+                var event = data._items[i];
+                if (event.coordinates) {
+                    var mblue = L.marker([event.coordinates.coordinates[1], event.coordinates.coordinates[0]]);
+                    mblue.bindPopup('<a href="' + event.path + '" class="maplink maplinkblue">' + event.name + '</a><br/>Groupe d\'appui');
+                    markers_blue.addLayer(mblue);
+                }
+            }
+        };
+        r.send();
+
+        var r2 = new XMLHttpRequest();
+        r2.open('GET', 'https://api.jlm2017.fr/events?where={"startTime": {"$gt": "' + new Date().toUTCString() + '"}}', true);
+        r2.setRequestHeader('Accept', 'application/json');
+        r2.onreadystatechange = function() {
+            if (r2.readyState != 4 || r2.status != 200) return;
+
+            var data = JSON.parse(r2.responseText);
+
+            for (var i = 0; i < data._items.length; i++) {
+                var event = data._items[i];
+                if (event.coordinates) {
+                    switch (event.agenda) {
+                        case 'melenchon':
+                            var mred = L.marker([event.coordinates.coordinates[1], event.coordinates.coordinates[0]], {
+                                icon: red_icon
+                            });
+                            mred.bindPopup('<a href="' + event.path + '" class="maplink maplinkred">' + event.name + '</a><br/>le ' + new Date(event.startTime).toLocaleString());
+                            markers_red.addLayer(mred);
+                            break;
+                        default:
+                            var mgreen = L.marker([event.coordinates.coordinates[1], event.coordinates.coordinates[0]], {
+                                icon: green_icon
+                            });
+                            mgreen.bindPopup('<a href="' + event.path + '" class="maplink maplinkgreen">' + event.name + '</a><br/>le ' + new Date(event.startTime).toLocaleString());
+                            markers_green.addLayer(mgreen);
+                            break;
+                    }
+                }
+            }
+        };
+        r2.send();
+
+        map.addLayer(markers_green);
+        map.addLayer(markers_blue);
+        map.addLayer(markers_red);
+
+        var overlayMaps = {
+            '<span class="layer-control-green">Événements</span>': markers_green,
+            '<span class="layer-control-blue">Groupes</span>': markers_blue,
+            '<span class="layer-control-red">Agenda de JLM</span>': markers_red
+        };
+
+        L.control.layers(null, overlayMaps, {
+            collapsed: false
+        }).addTo(map);
+
+        console.log('reached');
+    </script>
+</body>
+
+</html>
